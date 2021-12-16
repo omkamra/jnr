@@ -13,6 +13,7 @@ So far only tested on 64-bit Linux.
 (ns com.example
   (:require [omkamra.jnr.library :as library]
             [omkamra.jnr.struct :as struct]
+            [omkamra.jnr.union :as union]
             [omkamra.jnr.enum :as enum]
             [omkamra.jnr.util :as util)))
 ```
@@ -49,7 +50,7 @@ metadata:
 | C type | Clojure metadata |
 | ------ | ---------------- |
 | `void` | `^void` |
-| `char` | `^char` `^byte` |
+| `char` | `^char` or `^byte` |
 | `short` | `^short` |
 | `int` | `^int` |
 | `long` | `^long` |
@@ -60,9 +61,10 @@ metadata:
 | `char*` | `^String` |
 | `int8_t`..`int64_t` | `^int8_t`..`^int64_t` |
 | `uint8_t`..`uint64_t` | `^uint8_t`..`^uint64_t` |
-| `off_t` | `^off_t` |
-| `size_t` | `^size_t` |
-| `ssize_t` | `^ssize_t` |
+
+Besides these primitive types you can also use a couple of aliases
+like `size_t`, `off_t`, `pid_t` - for a full list see the [JNR-FFI
+sources](https://github.com/jnr/jnr-ffi/tree/master/src/main/java/jnr/ffi/types).
 
 Note that `long` is a C long (32/64 bits depending on the platform),
 not a JVM long (which is always 64 bits).
@@ -93,12 +95,12 @@ Clojure:
   (printf "Length of the string is %d\n" len))
 ```
 
-The Unicode string is encoded into a temporary buffer and `strlen`
-gets a pointer to the encoded bytes. The encoding is UTF-8 by default
-but may be overridden via the `Encoding` annotation:
+The Unicode string on the JVM side is encoded into a temporary buffer
+and `strlen` gets a pointer to the encoded bytes. The encoding is
+UTF-8 by default but can be overridden with an `:encoding` option:
 
 ```clojure
-  (^size_t strlen [^{:tag String jnr.ffi.annotations.Encoding "iso-8859-2"}])
+  (^size_t strlen [^String ^{:encoding "iso-8859-2"} s])
 ```
 
 The terminating zero byte is automatically supplied by the FFI.
@@ -149,16 +151,16 @@ Clojure:
 
 ```clojure
 (struct/define timespec
-  ^{:tag int jnr.ffi.types.time_t true} tv_sec
+  ^time_t tv_sec
   ^long tv_nsec)
 
 (library/define $c "c"
-  (^int clock_gettime [^int clock ^Pointer ts]))
+  (^int clock_gettime [^int clock ^timespec ts]))
 
 (def CLOCK_REALTIME 0)
 
 (let [ts (timespec. (library/runtime $c))]
-  (.clock_gettime $c CLOCK_REALTIME (timespec/getMemory ts))
+  (.clock_gettime $c CLOCK_REALTIME ts)
   (printf "%d seconds, %d nanoseconds\n"
            (.. ts tv_sec get)
            (.. ts tv_nsec get)))
@@ -167,16 +169,54 @@ Clojure:
 Here we:
 
 1. dynamically create a new `jnr.ffi.Struct` subclass: `(struct/define timespec ...)`,
-2. instantiate it: `(timespec. (library/runtime $c))` and
-3. take a pointer to the struct instance: `(timespec/getMemory ts)`.
+2. instantiate it: `(timespec. (library/runtime $c))`
+3. pass it to `clock_gettime()`
 
-Check the `jnr.ffi.types` package for a list of type annotations
-predefined by JNR-FFI. These are automatically converted to the right
-underlying type depending on the platform.
+Before the call, the FFI creates a native `timespec` structure (laid
+out in memory according to platform conventions) and populates its
+fields from the JVM-side `ts` object. The `clock_gettime()` function
+gets a pointer to this native structure. After the call returns, all
+fields in the native structure are copied back to the `ts` object. If
+you want to avoid the copying in either direction, add an `:in` or
+`:out` option to the relevant struct parameter:
 
-Unfortunately `clockid_t` - the type of the first `clock_gettime()`
-argument - is not supported yet so I had to tag with a plain `int` and
-hope for the best.
+```clojure
+(^int clock_gettime [^int clock ^timespec ^:out ts])
+```
+
+### Unions
+
+C:
+
+```c
+typedef union epoll_data
+{
+  void *ptr;
+  int fd;
+  uint32_t u32;
+  uint64_t u64;
+} epoll_data_t;
+
+struct epoll_event
+{
+  uint32_t events;      /* Epoll events */
+  epoll_data_t data;    /* User data variable */
+} __attribute__ ((__packed__));
+```
+
+Clojure:
+
+```clojure
+(union/define epoll_data_t
+  ^Pointer ptr
+  ^int fd
+  ^uint32_t u32
+  ^uint64_t u64)
+
+(struct/define ^:packed epoll_event
+  ^uint32_t events
+  ^epoll_data_t data)
+```
 
 ### Passing primitive types by reference
 
@@ -194,14 +234,14 @@ Clojure:
 (library/define $sdl2 "SDL2"
   (^int SDL_VideoInit [^String driver_name])
   (^int SDL_GetDisplayDPI [^int displayIndex
-                           ^{:tag jnr.ffi.byref.FloatByReference jnr.ffi.annotations.Out true} ddpi
-                           ^{:tag jnr.ffi.byref.FloatByReference jnr.ffi.annotations.Out true} hdpi
-                           ^{:tag jnr.ffi.byref.FloatByReference jnr.ffi.annotations.Out true} vdpi])
+                           ^byref/Float ^:out ddpi
+                           ^byref/Float ^:out hdpi
+                           ^byref/Float ^:out vdpi])
   (^void SDL_VideoQuit []))
 
-(let [ddpi (jnr.ffi.byref.FloatByReference.)
-      hdpi (jnr.ffi.byref.FloatByReference.)
-      vdpi (jnr.ffi.byref.FloatByReference.)]
+(let [ddpi (util/byref Float)
+      hdpi (util/byref Float)
+      vdpi (util/byref Float)]
   (assert (zero? (.SDL_VideoInit $sdl2 nil)))
   (.SDL_GetDisplayDPI $sdl2 0 ddpi hdpi vdpi)
   (.SDL_VideoQuit $sdl2)
@@ -211,14 +251,44 @@ Clojure:
           (.floatValue vdpi)))
 ```
 
-The `Out` annotation tells the FFI that `SDL_GetDisplayDPI()` will
-only write through the annotated pointers. This is an optimization
-which avoids a JVM->C copy before making the call. There is also a
-corresponding `In` annotation. The default is both `In` and `Out`.
+Type tags of the form `byref/X` are automagically expanded to
+`jnr.ffi.byref.XByReference` at compile time. Possible values of X
+include `Byte`, `Short`, `Int`, `LongLong`, `NativeLong`, `Float`,
+`Double` and `Pointer`.
 
-`jnr.ffi.byref.FloatByReference` and `jnr.ffi.annotations.Out`
-can be shortened to `FloatByReference` and `Out` by importing these
-classes in the namespace declaration.
+### Enumerations
+
+C:
+
+```c
+typedef enum {
+  UV_RUN_DEFAULT = 0,
+  UV_RUN_ONCE,
+  UV_RUN_NOWAIT
+} uv_run_mode;
+
+if (mode == UV_RUN_ONCE) {
+  do_something();
+}
+
+```
+
+Clojure:
+
+```clojure
+(enum/define uv_run_mode
+  [UV_RUN_DEFAULT 0]
+  UV_RUN_ONCE
+  UV_RUN_NOWAIT)
+
+(if (= mode uv_run_mode/UV_RUN_ONCE)
+  (do-something))
+```
+
+The `enum/define` form dynamically creates a `java.lang.Enum`
+subclass with the given name.
+
+Enum values are assigned in the same way as in C.
 
 ### Errno
 
