@@ -239,7 +239,7 @@
          (.omkamra_jnr_test_enums $testlib omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_LAST))))
 
 (deftest omkamra_jnr_test_fill_struct
-  (let [s (omkamra_jnr_test_struct. (.getRuntime $testlib))]
+  (let [s (omkamra_jnr_test_struct. (library/runtime $testlib))]
     (.omkamra_jnr_test_fill_struct $testlib (jnr.ffi.Struct/getMemory s))
     (is (= 0x01 (.. s c get)))
     (is (= 0x02 (.. s uc get)))
@@ -265,3 +265,13 @@
       (is (= "ABCDEFGHIJ" letters)))
     (is (= 9876 (.. s u p x get)))
     (is (= 5432 (.. s u p y get)))))
+
+(struct/define ^:packed omkamra_jnr_test_packed_struct
+  ^char c
+  ^int i)
+
+(deftest omkamra_jnr_test_packed_structs
+  (let [s (omkamra_jnr_test_packed_struct. (library/runtime $testlib))]
+    (is (= 0 (.. s c offset)))
+    (is (= 1 (.. s i offset)))
+    (is (= 5 (jnr.ffi.Struct/size s)))))

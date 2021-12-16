@@ -13,24 +13,6 @@
       s
       (str (munge (ns-name *ns*)) "." s))))
 
-(defn alloc-temp-int
-  [$lib]
-  (let [runtime (jnr.ffi.Runtime/getRuntime $lib)
-        int-type jnr.ffi.NativeType/SINT]
-    (jnr.ffi.Memory/allocateTemporary runtime int-type)))
-
-(defn alloc-temp-double
-  [$lib]
-  (let [runtime (jnr.ffi.Runtime/getRuntime $lib)
-        double-type jnr.ffi.NativeType/DOUBLE]
-    (jnr.ffi.Memory/allocateTemporary runtime double-type)))
-
-(defn alloc-temp-buffer
-  [$lib size]
-  (let [runtime (jnr.ffi.Runtime/getRuntime $lib)
-        mm (.getMemoryManager runtime)]
-    (.allocateTemporary mm size false)))
-
 (defn instruction?
   [item]
   (and (vector? item) (keyword? (first item))))

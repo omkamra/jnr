@@ -65,7 +65,7 @@
         (add-generic-field cls spec)))
 
 (defn build-struct
-  [cls super field-specs]
+  [cls super field-specs alignment]
   {:name cls
    :flags #{:public :super}
    :super super
@@ -79,7 +79,15 @@
      (collect
       [:aload 0]
       [:aload 1]
-      [:invokespecial super :init [jnr.ffi.Runtime :void]]
+      (if alignment
+        (vector
+         [:new jnr.ffi.Struct$Alignment]
+         [:dup]
+         [:ldc alignment]
+         [:invokespecial jnr.ffi.Struct$Alignment :init [:int :void]]
+         [:invokespecial super :init [jnr.ffi.Runtime jnr.ffi.Struct$Alignment :void]])
+        (vector
+         [:invokespecial super :init [jnr.ffi.Runtime :void]]))
       (map #(add-field cls %) field-specs)
       [:return])}]})
 
@@ -140,15 +148,19 @@
          :ctor-args []
          :size size}))))
 
-(defmacro define-with-super
+(defmacro define-struct-or-union
   {:style/indent 1}
-  [super name & field-specs]
+  [struct-or-union name & field-specs]
   (let [cls (qualified-class-name name)
         cls-parts (str/split cls #"\.")
         ns-sym (symbol (str/join "." (butlast cls-parts)))
         name-sym (symbol (last cls-parts))
         field-specs (map resolve-struct-field-spec field-specs)
-        t (build-struct cls super field-specs)]
+        struct? (= :struct struct-or-union)
+        super (if struct? 'jnr.ffi.Struct 'jnr.ffi.Union)
+        metadata (meta name)
+        alignment (when struct? (if (:packed metadata) 1 0))
+        t (build-struct cls super field-specs alignment)]
     `(do
        (insn/define ~t)
        (import '(~ns-sym ~name-sym)))))
@@ -156,4 +168,4 @@
 (defmacro define
   {:style/indent 1}
   [struct-name & field-specs]
-  `(define-with-super jnr.ffi.Struct ~struct-name ~@field-specs))
+  `(define-struct-or-union :struct ~struct-name ~@field-specs))
