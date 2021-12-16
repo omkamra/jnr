@@ -121,7 +121,7 @@
   (^int omkamra_jnr_test_string_length [^String s])
 
   ;; use `Encoding` annotation to specify how to encode a Unicode string into native bytes
-  (^int omkamra_jnr_test_string_length_latin2 [^{:tag String Encoding "iso-8859-2"} s])
+  (^int omkamra_jnr_test_string_length_latin2 [^String ^{:encoding "iso-8859-2"} s])
   (^String omkamra_jnr_test_return_string [])
 
   (^void omkamra_jnr_test_set_errno [^int errno])
