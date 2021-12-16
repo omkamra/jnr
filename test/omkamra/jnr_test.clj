@@ -120,14 +120,15 @@
   ;; for String parameters the zero terminator is supplied automatically
   (^int omkamra_jnr_test_string_length [^String s])
 
-  ;; use `Encoding` annotation to specify how to encode a Unicode string into native bytes
+  ;; use `:encoding` key in metadata to specify how to encode a
+  ;; Unicode string into native bytes
   (^int omkamra_jnr_test_string_length_latin2 [^String ^{:encoding "iso-8859-2"} s])
   (^String omkamra_jnr_test_return_string [])
 
   (^void omkamra_jnr_test_set_errno [^int errno])
   (^void omkamra_jnr_test_fill_buffer [^ByteBuffer buf ^int size])
   (^int omkamra_jnr_test_enums [^omkamra_jnr_test_enum value])
-  (^void omkamra_jnr_test_fill_struct [^Pointer s]))
+  (^void omkamra_jnr_test_fill_struct [^omkamra_jnr_test_struct s]))
 
 (def ^:dynamic $testlib nil)
 
@@ -240,7 +241,7 @@
 
 (deftest omkamra_jnr_test_fill_struct
   (let [s (omkamra_jnr_test_struct. (library/runtime $testlib))]
-    (.omkamra_jnr_test_fill_struct $testlib (jnr.ffi.Struct/getMemory s))
+    (.omkamra_jnr_test_fill_struct $testlib s)
     (is (= 0x01 (.. s c get)))
     (is (= 0x02 (.. s uc get)))
     (is (= 0x0304 (.. s s get)))
