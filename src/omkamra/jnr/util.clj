@@ -28,9 +28,3 @@
             (recur (concat item (next items)) result)
             :else (throw (ex-info "cannot collect item" {:item item})))
       result)))
-
-(defmacro byref
-  ([type]
-   `(new ~(symbol (str "jnr.ffi.byref." type "ByReference"))))
-  ([type init]
-   `(new ~(symbol (str "jnr.ffi.byref." type "ByReference")) ~init)))

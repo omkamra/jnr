@@ -128,7 +128,17 @@
   (^void omkamra_jnr_test_set_errno [^int errno])
   (^void omkamra_jnr_test_fill_buffer [^ByteBuffer buf ^int size])
   (^int omkamra_jnr_test_enums [^omkamra_jnr_test_enum value])
-  (^void omkamra_jnr_test_fill_struct [^omkamra_jnr_test_struct s]))
+  (^void omkamra_jnr_test_fill_struct [^omkamra_jnr_test_struct s])
+
+  (^void omkamra_jnr_test_pass_by_reference
+   [^char* c
+    ^short* s
+    ^int* i
+    ^long* l
+    ^long-long* ll
+    ^float* f
+    ^double* d
+    ^Pointer* p]))
 
 (def ^:dynamic $testlib nil)
 
@@ -276,3 +286,28 @@
     (is (= 0 (.. s c offset)))
     (is (= 1 (.. s i offset)))
     (is (= 5 (jnr.ffi.Struct/size s)))))
+
+(deftest omkamra_jnr_test_pass_by_reference
+  (let [c (jnr.ffi.byref.ByteByReference. (byte 123))
+        s (jnr.ffi.byref.ShortByReference. (short 12345))
+        i (jnr.ffi.byref.IntByReference. (int 214748364))
+        l (case (.longSize (jnr.ffi.Runtime/getSystemRuntime))
+            4 (jnr.ffi.byref.NativeLongByReference. (long 216738164))
+            8 (jnr.ffi.byref.NativeLongByReference. (long 922337203685477580)))
+        ll (jnr.ffi.byref.LongLongByReference. (long 912367202683476585))
+        f (jnr.ffi.byref.FloatByReference. (float 8325.625))
+        d (jnr.ffi.byref.DoubleByReference. (double 436523.125))
+        p (jnr.ffi.byref.PointerByReference.)]
+    (.omkamra_jnr_test_pass_by_reference $testlib c s i l ll f d p)
+    (is (= -123 (.getValue c)))
+    (is (= -12345 (.getValue s)))
+    (is (= -214748364 (.getValue i)))
+    (is (= (case (.longSize (jnr.ffi.Runtime/getSystemRuntime))
+             4 -216738164
+             8 -922337203685477580) (.getValue l)))
+    (is (= -912367202683476585 (.getValue ll)))
+    (is (= 8326.125 (.getValue f)))
+    (is (= 436523.875 (.getValue d)))
+    (is (= "Booze Design" (.getString (.getValue p) 0)))
+    (is (= "ooze Design" (.getString (.getValue p) 1)))
+    (is (= "Design" (.getString (.getValue p) 6)))))

@@ -123,3 +123,17 @@ void omkamra_jnr_test_fill_struct(struct omkamra_jnr_test_struct *s) {
   s->u.p.x = 9876;
   s->u.p.y = 5432;
 }
+
+void omkamra_jnr_test_pass_by_reference(unsigned char *c, unsigned short *s,
+                                        unsigned int *i, unsigned long *l,
+                                        unsigned long long *ll, float *f, double *d,
+                                        char **p) {
+  *c = (*c ^ -1) + 1;
+  *s = (*s ^ -1) + 1;
+  *i = (*i ^ -1) + 1;
+  *l = (*l ^ -1) + 1;
+  *ll = (*ll ^ -1) + 1;
+  *f += 0.5;
+  *d += 0.75;
+  *p = "Booze Design";
+}
