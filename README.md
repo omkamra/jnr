@@ -62,8 +62,8 @@ metadata:
 | `int8_t`..`int64_t` | `^int8_t`..`^int64_t` |
 | `uint8_t`..`uint64_t` | `^uint8_t`..`^uint64_t` |
 
-Besides these primitive types you can also use a couple of aliases
-like `size_t`, `off_t`, `pid_t` - for a full list see the [JNR-FFI
+Besides these primitive types you can also use aliases like `size_t`,
+`off_t`, `pid_t` - for a full list check the [JNR-FFI
 sources](https://github.com/jnr/jnr-ffi/tree/master/src/main/java/jnr/ffi/types).
 
 Note that `long` is a C long (32/64 bits depending on the platform),
@@ -97,13 +97,15 @@ Clojure:
 
 The Unicode string on the JVM side is encoded into a temporary buffer
 and `strlen` gets a pointer to the encoded bytes. The encoding is
-UTF-8 by default but can be overridden with an `:encoding` option:
+UTF-8 by default but can be overridden by supplying an `:encoding`
+option:
 
 ```clojure
   (^size_t strlen [^String ^{:encoding "iso-8859-2"} s])
 ```
 
-The terminating zero byte is automatically supplied by the FFI.
+The terminating zero byte on the native side is automatically supplied
+by the FFI.
 
 ### Buffers
 
@@ -131,6 +133,13 @@ Clojure:
       f (.fopen $c "/dev/urandom" "r")]
   (.fread $c buf 4096 1 f)
   (.fclose $c f))
+```
+
+If you have a `java.nio.Buffer` argument but the parameter is tagged
+as a plain `Pointer`, you must wrap the buffer in a Pointer:
+
+```clojure
+(jnr.ffi.Pointer/wrap (library/runtime $c) buf)
 ```
 
 ### Structures
@@ -234,33 +243,31 @@ Clojure:
 (library/define $sdl2 "SDL2"
   (^int SDL_VideoInit [^String driver_name])
   (^int SDL_GetDisplayDPI [^int displayIndex
-                           ^byref/Float ^:out ddpi
-                           ^byref/Float ^:out hdpi
-                           ^byref/Float ^:out vdpi])
+                           ^Float* ^:out ddpi
+                           ^Float* ^:out hdpi
+                           ^Float* ^:out vdpi])
   (^void SDL_VideoQuit []))
 
-(let [ddpi (util/byref Float)
-      hdpi (util/byref Float)
-      vdpi (util/byref Float)]
+(let [ddpi (jnr.ffi.byref.FloatByReference.)
+      hdpi (jnr.ffi.byref.FloatByReference.)
+      vdpi (jnr.ffi.byref.FloatByReference.)]
   (assert (zero? (.SDL_VideoInit $sdl2 nil)))
   (.SDL_GetDisplayDPI $sdl2 0 ddpi hdpi vdpi)
   (.SDL_VideoQuit $sdl2)
   (printf "ddpi: %f hdpi: %f vdpi: %f\n"
-          (.floatValue ddpi)
-          (.floatValue hdpi)
-          (.floatValue vdpi)))
+          (.getValue ddpi)
+          (.getValue hdpi)
+          (.getValue vdpi)))
 ```
 
-Type tags of the form `byref/<X>` are automagically expanded to
+Type tags of the form `<X>*` are automagically expanded to
 `jnr.ffi.byref.<X>ByReference` at compile time. Possible values of
-`<X>` include `Byte`, `Short`, `Int`, `LongLong`, `NativeLong`,
-`Float`, `Double` and `Pointer`.
+`<X>` include `Byte`, `Short`, `Int`, `Long`, `LongLong`, `Float`,
+`Double` and `Pointer`.
 
-`(util/byref <X>)` forms are similarly expanded to `(new
-jnr.ffi.byref.<X>ByReference)`.
-
-If you want to set the value for an `:in` parameter, create the
-JVM-side value as `(util/byref <X> <value>)`.
+If you want to set a value for an `:in` argument before the call, pass
+it to the `XByReference` constructor,
+e.g. `(jnr.ffi.byref.FloatByReference. 5.0)`.
 
 ### Enumerations
 
