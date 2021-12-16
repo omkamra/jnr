@@ -256,6 +256,12 @@ Type tags of the form `byref/X` are automagically expanded to
 include `Byte`, `Short`, `Int`, `LongLong`, `NativeLong`, `Float`,
 `Double` and `Pointer`.
 
+`(util/byref X)` forms are similarly expanded to `(new
+jnr.ffi.byref.XByReference)`.
+
+If you want to set the value for an `:in` parameter, create the
+JVM-side value as `(util/byref X value)`.
+
 ### Enumerations
 
 C:
