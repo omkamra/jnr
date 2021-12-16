@@ -7,11 +7,18 @@
                           u_int8_t u_int16_t u_int32_t u_int64_t
                           off_t size_t ssize_t)))
 
+(defn resolve-annotation
+  [sym]
+  (try
+    (let [annotation (Class/forName (str "jnr.ffi.types." sym))]
+      {:tag 'long annotation true})
+    (catch ClassNotFoundException e)))
+
 (defn resolve-class-name
   [sym]
   (when-let [result (resolve sym)]
     (when (class? result)
-      (symbol (.getName result)))))
+      {:tag (symbol (.getName result))})))
 
 (defn tag->meta
   [tag]
@@ -31,11 +38,8 @@
       (uint16_t u_int16_t) {:tag 'short u_int16_t true}
       (uint32_t u_int32_t) {:tag 'int u_int32_t true}
       (uint64_t u_int64_t) {:tag 'long u_int64_t true}
-      off_t {:tag 'long off_t true}
-      size_t {:tag 'long size_t true}
-      ssize_t {:tag 'long ssize_t true}
-      (when-let [class-name (resolve-class-name tag)]
-        {:tag class-name}))))
+      (or (resolve-annotation tag)
+          (resolve-class-name tag)))))
 
 (defn resolve-meta
   [x]

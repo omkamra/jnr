@@ -50,6 +50,47 @@
   [^int a 10]
   [^omkamra_jnr_test_union u])
 
+(struct/define omkamra_jnr_test_struct_with_special_types
+  ^int8_t i8
+  ^uint8_t u8
+  ^int16_t i16
+  ^uint16_t u16
+  ^int32_t i32
+  ^uint32_t u32
+  ^int64_t i64
+  ^uint64_t u64
+  ^intptr_t intptr
+  ^uintptr_t uintptr
+  ^caddr_t caddr
+  ^dev_t dev
+  ^blkcnt_t blkcnt
+  ^blksize_t blksize
+  ^gid_t gid
+  ^in_addr_t in_addr
+  ^in_port_t in_port
+  ^ino_t ino
+  ^ino64_t ino64
+  ^key_t key
+  ^mode_t mode
+  ^nlink_t nlink
+  ^id_t id
+  ^pid_t pid
+  ^off_t off
+  ^swblk_t swblk
+  ^uid_t uid
+  ^clock_t clock
+  ^size_t size
+  ^ssize_t ssize
+  ^time_t time
+  ^cc_t cc
+  ^speed_t speed
+  ^tcflag_t tcflag
+  ^fsblkcnt_t fsblkcnt
+  ^fsfilcnt_t fsfilcnt
+  ^sa_family_t sa_family
+  ^socklen_t socklen
+  ^rlim_t rlim)
+
 (library/define-interface omkamra_jnr_test_interface
   (^int omkamra_jnr_test_123 [])
 

@@ -83,6 +83,12 @@
       (map #(add-field cls %) field-specs)
       [:return])}]})
 
+(defn resolve-integer-alias
+  [sym]
+  (try
+    (Class/forName (str "jnr.ffi.Struct$" sym))
+    (catch ClassNotFoundException e)))
+
 (defn resolve-struct-field-tag
   [tag]
   (case tag
@@ -111,7 +117,9 @@
     double jnr.ffi.Struct$Double
 
     (* Pointer) jnr.ffi.Struct$Pointer
-    (resolve tag)))
+
+    (or (resolve-integer-alias tag)
+        (resolve tag))))
 
 (defn resolve-struct-field-spec
   [spec]
