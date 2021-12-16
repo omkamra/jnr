@@ -6,10 +6,31 @@
            (jnr.ffi.types int8_t int16_t int32_t int64_t
                           u_int8_t u_int16_t u_int32_t u_int64_t)))
 
+(def byref-syms
+  '{Byte* jnr.ffi.byref.ByteByReference
+    byte* jnr.ffi.byref.ByteByReference
+    char* jnr.ffi.byref.ByteByReference
+    Short* jnr.ffi.byref.ShortByReference
+    short* jnr.ffi.byref.ShortByReference
+    Integer* jnr.ffi.byref.IntByReference
+    Int* jnr.ffi.byref.IntByReference
+    int* jnr.ffi.byref.IntByReference
+    Long* jnr.ffi.byref.NativeLongByReference
+    long* jnr.ffi.byref.NativeLongByReference
+    LongLong* jnr.ffi.byref.LongLongByReference
+    longlong* jnr.ffi.byref.LongLongByReference
+    long-long* jnr.ffi.byref.LongLongByReference
+    Float* jnr.ffi.byref.FloatByReference
+    float* jnr.ffi.byref.FloatByReference
+    Double* jnr.ffi.byref.DoubleByReference
+    double* jnr.ffi.byref.DoubleByReference
+    Pointer* jnr.ffi.byref.PointerByReference
+    })
+
 (defn resolve-byref
   [sym]
-  (when (= "byref" (namespace sym))
-    {:tag (symbol (str "jnr.ffi.byref." (name sym) "ByReference"))}))
+  (when-let [replacement (byref-syms sym)]
+    {:tag replacement}))
 
 (defn resolve-integer-alias
   [sym]
