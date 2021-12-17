@@ -1,4 +1,4 @@
-(defproject com.github.omkamra/jnr "0.1.0-SNAPSHOT"
+(defproject com.github.omkamra/jnr "0.1.0"
   :description "A Clojure wrapper for JNR-FFI"
   :url "https://github.com/omkamra/jnr"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
