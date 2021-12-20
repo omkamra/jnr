@@ -1,5 +1,7 @@
 # omkamra.jnr
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.github.omkamra/jnr.svg)](https://clojars.org/com.github.omkamra/jnr)
+
 A Clojure wrapper around [JNR-FFI](https://github.com/jnr/jnr-ffi).
 
 Makes it possible to call functions in native libraries without
