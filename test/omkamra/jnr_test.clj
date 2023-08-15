@@ -49,6 +49,7 @@
   [^omkamra_jnr_test_point p]
   [^int a8 10]
   [^int a16 1000]
+  [^omkamra_jnr_test_point r 2]
   [^omkamra_jnr_test_union u])
 
 (struct/define omkamra_jnr_test_struct_with_special_types
@@ -278,6 +279,10 @@
     (let [a16 (.. s a16)]
       (dotimes [i 1000]
         (is (= (+ 0x41 i) (.get (aget a16 i))))))
+    (is (= 5151 (.get (.x (aget (. s r) 0)))))
+    (is (= 6262 (.get (.y (aget (. s r) 0)))))
+    (is (= 7373 (.get (.x (aget (. s r) 1)))))
+    (is (= 8484 (.get (.y (aget (. s r) 1)))))
     (is (= 9876 (.. s u p x get)))
     (is (= 5432 (.. s u p y get)))))
 

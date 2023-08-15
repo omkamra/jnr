@@ -94,6 +94,7 @@ struct omkamra_jnr_test_struct {
   struct omkamra_jnr_test_point p;
   int a8[10];
   int a16[1000];
+  struct omkamra_jnr_test_point r[2];
   union omkamra_jnr_test_union u;
 };
 
@@ -124,6 +125,10 @@ void omkamra_jnr_test_fill_struct(struct omkamra_jnr_test_struct *s) {
   for (int i = 0; i < 1000; i++) {
     s->a16[i] = 'A' + i;
   }
+  s->r[0].x = 5151;
+  s->r[0].y = 6262;
+  s->r[1].x = 7373;
+  s->r[1].y = 8484;
   s->u.p.x = 9876;
   s->u.p.y = 5432;
 }

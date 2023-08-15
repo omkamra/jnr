@@ -23,7 +23,13 @@
      [:dup]
      [:sipush size]
      [:anewarray type]
-     [:invokevirtual cls "array" [atype atype]]
+     (let [param-type (cond (isa? type jnr.ffi.Struct)
+                            (array-type-desc jnr.ffi.Struct)
+                            :else
+                            atype)
+           return-type param-type]
+       [:invokevirtual cls "array" [param-type return-type]])
+     [:checkcast atype]
      [:putfield cls (clojure.core/name name) atype])))
 
 (defn add-struct-field
