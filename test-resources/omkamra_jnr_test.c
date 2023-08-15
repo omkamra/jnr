@@ -92,7 +92,8 @@ struct omkamra_jnr_test_struct {
   double d;
   enum omkamra_jnr_test_enum e;
   struct omkamra_jnr_test_point p;
-  int a[10];
+  int a8[10];
+  int a16[1000];
   union omkamra_jnr_test_union u;
 };
 
@@ -117,8 +118,11 @@ void omkamra_jnr_test_fill_struct(struct omkamra_jnr_test_struct *s) {
   s->e = OMKAMRA_JNR_TEST_SURREY;
   s->p.x = 1234;
   s->p.y = 5678;
-  for (int i=0; i<10; i++) {
-    s->a[i] = 'A' + i;
+  for (int i = 0; i < 10; i++) {
+    s->a8[i] = 'A' + i;
+  }
+  for (int i = 0; i < 1000; i++) {
+    s->a16[i] = 'A' + i;
   }
   s->u.p.x = 9876;
   s->u.p.y = 5432;

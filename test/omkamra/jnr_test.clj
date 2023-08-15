@@ -47,7 +47,8 @@
   [^double d]
   [^omkamra_jnr_test_enum e]
   [^omkamra_jnr_test_point p]
-  [^int a 10]
+  [^int a8 10]
+  [^int a16 1000]
   [^omkamra_jnr_test_union u])
 
 (struct/define omkamra_jnr_test_struct_with_special_types
@@ -271,9 +272,12 @@
     (is (= omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_SURREY (.. s e get)))
     (is (= 1234 (.. s p x get)))
     (is (= 5678 (.. s p y get)))
-    (let [a (.. s a)
-          letters (apply str (map #(char (.get (aget a %))) (range 10)))]
+    (let [a8 (.. s a8)
+          letters (apply str (map #(char (.get (aget a8 %))) (range 10)))]
       (is (= "ABCDEFGHIJ" letters)))
+    (let [a16 (.. s a16)]
+      (dotimes [i 1000]
+        (is (= (+ 0x41 i) (.get (aget a16 i))))))
     (is (= 9876 (.. s u p x get)))
     (is (= 5432 (.. s u p y get)))))
 

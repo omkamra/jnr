@@ -21,7 +21,7 @@
     (collect
      [:aload 0]
      [:dup]
-     [:bipush size]
+     [:sipush size]
      [:anewarray type]
      [:invokevirtual cls "array" [atype atype]]
      [:putfield cls (clojure.core/name name) atype])))
