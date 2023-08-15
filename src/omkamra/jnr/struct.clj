@@ -18,13 +18,24 @@
 (defn add-array-field
   [cls {:keys [name type size] :as spec}]
   (let [atype (array-type-desc type)]
-    (collect
-     [:aload 0]
-     [:dup]
-     [:bipush size]
-     [:anewarray type]
-     [:invokevirtual cls "array" [atype atype]]
-     [:putfield cls (clojure.core/name name) atype])))
+    (apply
+     collect
+     (concat
+      [[:aload 0]
+       [:dup]]
+
+      (if (<= size 127)
+        [[:bipush size]]
+        [[:sipush size]])
+
+      [[:anewarray type]]
+
+      (if (= (.getPackageName type) "jnr.ffi")
+        [[:invokevirtual cls "array" [atype atype]]]
+        [[:invokevirtual cls "array" ["[Ljnr/ffi/Struct;" "[Ljnr/ffi/Struct;"]]
+         [:checkcast atype]])
+
+      [[:putfield cls (clojure.core/name name) atype]]))))
 
 (defn add-struct-field
   [cls {:keys [name type] :as spec}]
