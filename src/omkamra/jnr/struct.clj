@@ -21,7 +21,7 @@
     (collect
      [:aload 0]
      [:dup]
-     [:sipush size]
+     [:ldc size]
      [:anewarray type]
      (let [param-type (cond (isa? type jnr.ffi.Struct)
                             (array-type-desc jnr.ffi.Struct)
