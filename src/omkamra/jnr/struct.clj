@@ -9,28 +9,43 @@
   [element-type]
   (type-desc (type (make-array element-type 0))))
 
+(defn struct-field-type
+  ([type size]
+   (if size
+     (array-type-desc (struct-field-type type))
+     (if (.isEnum type)
+       jnr.ffi.Struct$Enum
+       type)))
+  ([type]
+   (struct-field-type type nil)))
+
 (defn build-struct-field
   [{:keys [name type size] :as spec}]
   {:name (clojure.core/name name)
-   :type (if size (array-type-desc type) type)
+   :type (struct-field-type type size)
    :flags #{:public :final}})
 
 (defn add-array-field
   [cls {:keys [name type size] :as spec}]
-  (let [atype (array-type-desc type)]
+  (let [element-type (struct-field-type type)
+        atd (array-type-desc element-type)]
     (collect
      [:aload 0]
      [:dup]
      [:ldc size]
-     [:anewarray type]
-     (let [param-type (cond (isa? type jnr.ffi.Struct)
-                            (array-type-desc jnr.ffi.Struct)
-                            :else
-                            atype)
-           return-type param-type]
-       [:invokevirtual cls "array" [param-type return-type]])
-     [:checkcast atype]
-     [:putfield cls (clojure.core/name name) atype])))
+     [:anewarray element-type]
+     (cond (isa? element-type jnr.ffi.Struct)
+           (let [atd (array-type-desc jnr.ffi.Struct)]
+             [:invokevirtual cls "array" [atd atd]])
+           (isa? element-type jnr.ffi.Struct$Enum)
+           (let [atd (array-type-desc jnr.ffi.Struct$Enum)]
+             (vector
+              [:ldc type]
+              [:invokevirtual cls "array" [atd (class type) atd]]))
+           :else
+           [:invokevirtual cls "array" [atd atd]])
+     [:checkcast atd]
+     [:putfield cls (clojure.core/name name) atd])))
 
 (defn add-struct-field
   [cls {:keys [name type] :as spec}]
@@ -45,20 +60,25 @@
    [:checkcast type]
    [:putfield cls (clojure.core/name name) type]))
 
+(defn add-enum-field
+  [cls {:keys [name type] :as spec}]
+  (collect
+   [:aload 0]
+   [:new jnr.ffi.Struct$Enum]
+   [:dup]
+   [:aload 0]
+   [:ldc type]
+   [:invokespecial jnr.ffi.Struct$Enum :init [jnr.ffi.Struct (class type) :void]]
+   [:putfield cls (clojure.core/name name) jnr.ffi.Struct$Enum]))
+
 (defn add-generic-field
-  [cls {:keys [name type ctor-args] :as spec}]
+  [cls {:keys [name type] :as spec}]
   (collect
    [:aload 0]
    [:new type]
    [:dup]
    [:aload 0]
-   (for [arg ctor-args]
-     [:ldc arg])
-   [:invokespecial type :init
-    (vec (concat
-          [jnr.ffi.Struct]
-          (map class ctor-args)
-          [:void]))]
+   [:invokespecial type :init [jnr.ffi.Struct :void]]
    [:putfield cls (clojure.core/name name) type]))
 
 (defn add-field
@@ -67,6 +87,8 @@
         (add-array-field cls spec)
         (isa? type jnr.ffi.Struct)
         (add-struct-field cls spec)
+        (.isEnum type)
+        (add-enum-field cls spec)
         :else
         (add-generic-field cls spec)))
 
@@ -135,6 +157,13 @@
     (or (resolve-integer-alias tag)
         (resolve tag))))
 
+(defn valid-ffi-struct-member?
+  [cls]
+  (and (class? cls)
+       (or (isa? cls jnr.ffi.Struct$Member)
+           (isa? cls jnr.ffi.Struct)
+           (.isEnum cls))))
+
 (defn resolve-struct-field-spec
   [spec]
   (if (symbol? spec)
@@ -142,17 +171,11 @@
     (let [[name size] spec
           tag (:tag (meta name))
           cls (resolve-struct-field-tag tag)]
-      (when-not (class? cls)
+      (when-not (valid-ffi-struct-member? cls)
         (throw (ex-info "invalid struct field spec" {:spec spec})))
-      (if (.isEnum cls)
-        {:name name
-         :type jnr.ffi.Struct$Enum
-         :ctor-args [cls]
-         :size size}
-        {:name name
-         :type cls
-         :ctor-args []
-         :size size}))))
+      {:name name
+       :type cls
+       :size size})))
 
 (defmacro define-struct-or-union
   {:style/indent 1}

@@ -47,10 +47,26 @@
   [^double d]
   [^omkamra_jnr_test_enum e]
   [^omkamra_jnr_test_point p]
-  [^int a8 10]
-  [^int a16 1000]
-  [^omkamra_jnr_test_point r 2]
-  [^omkamra_jnr_test_union u])
+  [^omkamra_jnr_test_union u]
+  [^Pointer str])
+
+(struct/define omkamra_jnr_test_struct_with_arrays_inside
+  [^char c 111]
+  [^unsigned-char uc 222]
+  [^short s 333]
+  [^unsigned-short us 444]
+  [^int i 555]
+  [^unsigned-int ui 666]
+  [^long l 777]
+  [^unsigned-long ul 888]
+  [^long-long ll 999]
+  [^unsigned-long-long ull 1111]
+  [^float f 2222]
+  [^double d 3333]
+  [^omkamra_jnr_test_enum e 4444]
+  [^omkamra_jnr_test_point p 5555]
+  [^omkamra_jnr_test_union u 6666]
+  [^Pointer str 7777])
 
 (struct/define omkamra_jnr_test_struct_with_special_types
   ^int8_t i8
@@ -125,12 +141,14 @@
   ;; use `:encoding` key in metadata to specify how to encode a
   ;; Unicode string into native bytes
   (^int omkamra_jnr_test_string_length_latin2 [^String ^{:encoding "iso-8859-2"} s])
-  (^String omkamra_jnr_test_return_string [])
+  (^String omkamra_jnr_test_return_string [^int i])
 
   (^void omkamra_jnr_test_set_errno [^int errno])
   (^void omkamra_jnr_test_fill_buffer [^ByteBuffer buf ^int size])
   (^int omkamra_jnr_test_enums [^omkamra_jnr_test_enum value])
   (^void omkamra_jnr_test_fill_struct [^omkamra_jnr_test_struct s])
+  (^void omkamra_jnr_test_fill_struct_with_arrays_inside
+   [^omkamra_jnr_test_struct_with_arrays_inside s])
 
   (^void omkamra_jnr_test_pass_by_reference
    [^char* c
@@ -217,7 +235,9 @@
   (is (= 9 (.omkamra_jnr_test_string_length_latin2 $testlib "áéíóúöüőű"))))
 
 (deftest omkamra_jnr_test_return_string
-  (is (= "FlyLo/Reggie/Marc" (.omkamra_jnr_test_return_string $testlib))))
+  (is (= "FlyLo" (.omkamra_jnr_test_return_string $testlib 0)))
+  (is (= "Reggie" (.omkamra_jnr_test_return_string $testlib 1)))
+  (is (= "Marc" (.omkamra_jnr_test_return_string $testlib 2))))
 
 (deftest omkamra_jnr_test_set_errno
   (.omkamra_jnr_test_set_errno $testlib 1234)
@@ -273,18 +293,54 @@
     (is (= omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_SURREY (.. s e get)))
     (is (= 1234 (.. s p x get)))
     (is (= 5678 (.. s p y get)))
-    (let [a8 (.. s a8)
-          letters (apply str (map #(char (.get (aget a8 %))) (range 10)))]
-      (is (= "ABCDEFGHIJ" letters)))
-    (let [a16 (.. s a16)]
-      (dotimes [i 1000]
-        (is (= (+ 0x41 i) (.get (aget a16 i))))))
-    (is (= 5151 (.get (.x (aget (. s r) 0)))))
-    (is (= 6262 (.get (.y (aget (. s r) 0)))))
-    (is (= 7373 (.get (.x (aget (. s r) 1)))))
-    (is (= 8484 (.get (.y (aget (. s r) 1)))))
     (is (= 9876 (.. s u p x get)))
-    (is (= 5432 (.. s u p y get)))))
+    (is (= 5432 (.. s u p y get)))
+    (is (= "FFFargo" (.. s str get (getString 0))))
+    (is (= "Fargo" (.. s str get (getString 2))))))
+
+(deftest omkamra_jnr_test_fill_struct_with_arrays_inside
+  (let [s (omkamra_jnr_test_struct_with_arrays_inside. (library/runtime $testlib))]
+    (.omkamra_jnr_test_fill_struct_with_arrays_inside $testlib s)
+    (is (= (range 111) (map #(.get (aget (.. s c) %)) (range 111))))
+    (is (= (range 222) (map #(.get (aget (.. s uc) %)) (range 222))))
+    (is (= (range 333) (map #(.get (aget (.. s s) %)) (range 333))))
+    (is (= (range 444) (map #(.get (aget (.. s us) %)) (range 444))))
+    (is (= (range 555) (map #(.get (aget (.. s i) %)) (range 555))))
+    (is (= (range 666) (map #(.get (aget (.. s ui) %)) (range 666))))
+    (is (= (range 777) (map #(.get (aget (.. s l) %)) (range 777))))
+    (is (= (range 888) (map #(.get (aget (.. s ul) %)) (range 888))))
+    (is (= (range 999) (map #(.get (aget (.. s ll) %)) (range 999))))
+    (is (= (range 1111) (map #(.get (aget (.. s ull) %)) (range 1111))))
+    (is (= (map float (range 2222)) (map #(.get (aget (.. s f) %)) (range 2222))))
+    (is (= (map double (range 3333)) (map #(.get (aget (.. s d) %)) (range 3333))))
+    (is (every? (fn [[a b]] (= (.intValue a) (.intValue b)))
+                (map vector
+                     (take 4444 (cycle [omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_WHO
+                                        omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_KNOWS
+                                        omkamra_jnr_test_enum/OMKAMRA_JNR_TEST_SURREY]))
+                     (map #(.get (aget (.. s e) %)) (range 4444)))))
+    (is (every? (fn [[i p]] (and (= (.. p x get) (* i 2))
+                                 (= (.. p y get) (* i 3))))
+                (map vector
+                     (range 5555)
+                     (map #(aget (.. s p) %) (range 5555)))))
+    (is (every? (fn [i] (case (mod i 7)
+                          0 (= (.. (aget (.. s u) i) c get) (mod i 128))
+                          1 (= (.. (aget (.. s u) i) s get) i)
+                          2 (= (.. (aget (.. s u) i) i get) i)
+                          3 (= (.. (aget (.. s u) i) l get) i)
+                          4 (= (.. (aget (.. s u) i) f get) (float i))
+                          5 (= (.. (aget (.. s u) i) d get) (double i))
+                          6 (and (= (.. (aget (.. s u) i) p x get) (* i 2))
+                                 (= (.. (aget (.. s u) i) p y get) (* i 3)))))
+                (range 6666)))
+    (is (every? (fn [i] (= (.. (aget (.. s str) i) get (getString 0))
+                           (case (mod i 3)
+                             0 "FlyLo"
+                             1 "Reggie"
+                             2 "Marc")))
+                (range 7777)))))
+
 
 (struct/define ^:packed omkamra_jnr_test_packed_struct
   ^char c

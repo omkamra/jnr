@@ -22,8 +22,15 @@ int omkamra_jnr_test_string_length_latin2(char *s) {
   return strlen(s);
 }
 
-char *omkamra_jnr_test_return_string() {
-  return "FlyLo/Reggie/Marc";
+char *omkamra_jnr_test_return_string(int i) {
+  switch (i) {
+  case 0:
+    return "FlyLo";
+  case 1:
+    return "Reggie";
+  case 2:
+    return "Marc";
+  }
 }
 
 void omkamra_jnr_test_set_errno(int new_errno) {
@@ -92,10 +99,8 @@ struct omkamra_jnr_test_struct {
   double d;
   enum omkamra_jnr_test_enum e;
   struct omkamra_jnr_test_point p;
-  int a8[10];
-  int a16[1000];
-  struct omkamra_jnr_test_point r[2];
   union omkamra_jnr_test_union u;
+  char *str;
 };
 
 void omkamra_jnr_test_fill_struct(struct omkamra_jnr_test_struct *s) {
@@ -119,24 +124,108 @@ void omkamra_jnr_test_fill_struct(struct omkamra_jnr_test_struct *s) {
   s->e = OMKAMRA_JNR_TEST_SURREY;
   s->p.x = 1234;
   s->p.y = 5678;
-  for (int i = 0; i < 10; i++) {
-    s->a8[i] = 'A' + i;
-  }
-  for (int i = 0; i < 1000; i++) {
-    s->a16[i] = 'A' + i;
-  }
-  s->r[0].x = 5151;
-  s->r[0].y = 6262;
-  s->r[1].x = 7373;
-  s->r[1].y = 8484;
   s->u.p.x = 9876;
   s->u.p.y = 5432;
+  s->str = "FFFargo";
+}
+
+struct omkamra_jnr_test_struct_with_arrays_inside {
+  char c[111];
+  unsigned char uc[222];
+  short s[333];
+  unsigned short us[444];
+  int i[555];
+  unsigned int ui[666];
+  long l[777];
+  unsigned long ul[888];
+  long long ll[999];
+  unsigned long long ull[1111];
+  float f[2222];
+  double d[3333];
+  enum omkamra_jnr_test_enum e[4444];
+  struct omkamra_jnr_test_point p[5555];
+  union omkamra_jnr_test_union u[6666];
+  char *str[7777];
+};
+
+void omkamra_jnr_test_fill_struct_with_arrays_inside(
+    struct omkamra_jnr_test_struct_with_arrays_inside *s) {
+  for (int i = 0; i < 111; i++)
+    s->c[i] = i;
+  for (int i = 0; i < 222; i++)
+    s->uc[i] = i;
+  for (int i = 0; i < 333; i++)
+    s->s[i] = i;
+  for (int i = 0; i < 444; i++)
+    s->us[i] = i;
+  for (int i = 0; i < 555; i++)
+    s->i[i] = i;
+  for (int i = 0; i < 666; i++)
+    s->ui[i] = i;
+  for (int i = 0; i < 777; i++)
+    s->l[i] = i;
+  for (int i = 0; i < 888; i++)
+    s->ul[i] = i;
+  for (int i = 0; i < 999; i++)
+    s->ll[i] = i;
+  for (int i = 0; i < 1111; i++)
+    s->ull[i] = i;
+  for (int i = 0; i < 2222; i++)
+    s->f[i] = i;
+  for (int i = 0; i < 3333; i++)
+    s->d[i] = i;
+  for (int i = 0; i < 4444; i++) {
+    switch (i % 3) {
+    case 0:
+      s->e[i] = OMKAMRA_JNR_TEST_WHO;
+      break;
+    case 1:
+      s->e[i] = OMKAMRA_JNR_TEST_KNOWS;
+      break;
+    case 2:
+      s->e[i] = OMKAMRA_JNR_TEST_SURREY;
+      break;
+    }
+  }
+  for (int i = 0; i < 5555; i++) {
+    s->p[i].x = i * 2;
+    s->p[i].y = i * 3;
+  }
+  for (int i = 0; i < 6666; i++) {
+    switch (i % 7) {
+    case 0:
+      s->u[i].c = i % 128;
+      break;
+    case 1:
+      s->u[i].s = i;
+      break;
+    case 2:
+      s->u[i].i = i;
+      break;
+    case 3:
+      s->u[i].l = i;
+      break;
+    case 4:
+      s->u[i].f = i;
+      break;
+    case 5:
+      s->u[i].d = i;
+      break;
+    case 6:
+      s->u[i].p.x = i * 2;
+      s->u[i].p.y = i * 3;
+      break;
+    }
+  }
+  for (int i = 0; i < 7777; i++) {
+    s->str[i] = omkamra_jnr_test_return_string(i % 3);
+  }
 }
 
 void omkamra_jnr_test_pass_by_reference(unsigned char *c, unsigned short *s,
                                         unsigned int *i, unsigned long *l,
-                                        unsigned long long *ll, float *f, double *d,
-                                        char **p) {
+                                        unsigned long long *ll, float *f,
+                                        double *d, char **p) {
   *c = (*c ^ -1) + 1;
   *s = (*s ^ -1) + 1;
   *i = (*i ^ -1) + 1;
